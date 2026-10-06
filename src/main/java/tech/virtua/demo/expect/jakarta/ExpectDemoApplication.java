@@ -4,6 +4,6 @@ import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.ApplicationPath;
 
 @ApplicationPath("rest")
-public class ExampleApplication extends Application {
+public class ExpectDemoApplication extends Application {
     // Needed to enable Jakarta REST and specify path.
 }

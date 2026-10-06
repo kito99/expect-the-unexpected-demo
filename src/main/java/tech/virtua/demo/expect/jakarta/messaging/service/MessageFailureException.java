@@ -1,18 +1,20 @@
 package tech.virtua.demo.expect.jakarta.messaging.service;
 
-import tech.virtua.demo.expect.jakarta.ExampleApplicationException;
+import tech.virtua.demo.expect.jakarta.ApplicationException;
 
-public class MessageFailureException extends ExampleApplicationException {
+import static tech.virtua.demo.expect.jakarta.ErrorCode.MESSAGE_SEND_FAILED;
+
+public class MessageFailureException extends ApplicationException {
 
     public MessageFailureException() {
-        super();
+        super(MESSAGE_SEND_FAILED);
     }
 
-    public MessageFailureException(String message) {
-        super(message);
+    public MessageFailureException(final String message) {
+        super(MESSAGE_SEND_FAILED, message);
     }
 
-    public MessageFailureException(Throwable cause) {
-        super(cause);
+    public MessageFailureException(final Throwable cause) {
+        super(MESSAGE_SEND_FAILED, cause);
     }
 }

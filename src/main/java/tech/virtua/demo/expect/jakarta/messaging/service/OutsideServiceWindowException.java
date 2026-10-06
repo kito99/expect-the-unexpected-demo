@@ -1,14 +1,16 @@
 package tech.virtua.demo.expect.jakarta.messaging.service;
 
-import tech.virtua.demo.expect.jakarta.ExampleApplicationException;
+import tech.virtua.demo.expect.jakarta.ApplicationException;
 
-public class OutsideServiceWindowException extends ExampleApplicationException {
+import static tech.virtua.demo.expect.jakarta.ErrorCode.OUTSIDE_SERVICE_WINDOW;
+
+public class OutsideServiceWindowException extends ApplicationException {
 
     public OutsideServiceWindowException() {
-        super();
+        super(OUTSIDE_SERVICE_WINDOW);
     }
 
-    public OutsideServiceWindowException(String message) {
-        super(message);
+    public OutsideServiceWindowException(final String message) {
+        super(OUTSIDE_SERVICE_WINDOW, message);
     }
 }

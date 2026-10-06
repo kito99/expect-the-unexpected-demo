@@ -6,6 +6,10 @@
         <user name="username" password="password" />
     </basicRegistry>
     <keyStore id="defaultKeyStore" password="password" />
+
+    <!-- The console defaults to AUDIT and above, which hides application INFO messages. -->
+    <logging consoleLogLevel="INFO" />
+
     <httpEndpoint id="defaultHttpEndpoint" host="*" httpPort="9080" httpsPort="9443" />
     <webApplication location="jakartaee-agent-demo.war" contextRoot="/"/>
 </server>
