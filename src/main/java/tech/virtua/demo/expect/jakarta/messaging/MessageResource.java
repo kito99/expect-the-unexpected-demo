@@ -7,9 +7,9 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import tech.virtua.demo.expect.jakarta.messaging.service.Message;
-import tech.virtua.demo.expect.jakarta.messaging.service.MessageService;
-import tech.virtua.demo.expect.jakarta.messaging.service.MessageWrapperService;
+import tech.virtua.demo.expect.jakarta.messaging.service.expected.Message;
+import tech.virtua.demo.expect.jakarta.messaging.service.expected.MessageService;
+import tech.virtua.demo.expect.jakarta.messaging.service.expected.MessageWrapperService;
 
 @Path("messages")
 public class MessageResource {

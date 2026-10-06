@@ -1,4 +1,4 @@
-package tech.virtua.demo.expect.jakarta.messaging.service;
+package tech.virtua.demo.expect.jakarta.messaging.service.expected;
 
 import jakarta.validation.Valid;
 

@@ -1,4 +1,4 @@
-package tech.virtua.demo.expect.jakarta.messaging.service;
+package tech.virtua.demo.expect.jakarta.messaging.service.expected;
 
 import tech.virtua.demo.expect.jakarta.ApplicationException;
 

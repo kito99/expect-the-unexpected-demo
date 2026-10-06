@@ -1,4 +1,4 @@
-package tech.virtua.demo.expect.jakarta.messaging.service;
+package tech.virtua.demo.expect.jakarta.messaging.service.expected;
 
 /**
  * Sends messages by passing them through a chain of nested send attempts
