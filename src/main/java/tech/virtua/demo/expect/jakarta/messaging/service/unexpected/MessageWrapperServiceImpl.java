@@ -23,7 +23,6 @@ public class MessageWrapperServiceImpl implements MessageWrapperService {
             sendRepeatedly(message, 0, 10);
         } catch (Exception e) {
             System.err.println("Could not send message: " + message);
-            throw new RuntimeException(e);
         }
     }
 
@@ -36,7 +35,6 @@ public class MessageWrapperServiceImpl implements MessageWrapperService {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            throw e;
         }
     }
 }
