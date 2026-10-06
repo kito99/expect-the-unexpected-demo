@@ -121,14 +121,24 @@ public final class ErrorMapping {
     }
 
     private static void log(final ErrorResponse error, final Throwable cause) {
-        final var summary = String.format("[%s] %s %s -> %d: %s",
-                error.errorId(), error.code(), error.path(), error.status(), error.message());
-        if (familyOf(error.status()) == SERVER_ERROR) {
-            LOGGER.log(SEVERE, summary, cause);
+        final var summary = String.format("[%s] %s %s -> %d: %s%s",
+                error.errorId(), error.code(), error.path(), error.status(), error.message(),
+                describe(error.violations()));
+        final var level = familyOf(error.status()) == SERVER_ERROR ? SEVERE : WARNING;
+        if (error.code() == VALIDATION_FAILED) {
+            // A rejected request is the caller's problem, and the trace only runs back
+            // through the validation interceptor, so it points at nothing actionable.
+            LOGGER.log(level, summary);
         } else {
-            // A rejected request is the caller's problem, so its stack trace is noise.
-            LOGGER.log(WARNING, summary);
+            LOGGER.log(level, summary, cause);
         }
+    }
+
+    /** Names the rejected inputs so a validation entry stands on its own without the payload. */
+    private static String describe(final List<Violation> violations) {
+        return violations.isEmpty() ? "" : violations.stream()
+                .map(violation -> String.format("%s: %s", violation.field(), violation.message()))
+                .collect(joining("; ", " [", "]"));
     }
 
     private static List<Violation> violationsOf(final ConstraintViolationException exception) {

@@ -7,12 +7,12 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import tech.virtua.demo.expect.jakarta.messaging.service.expected.Message;
-import tech.virtua.demo.expect.jakarta.messaging.service.expected.MessageService;
-import tech.virtua.demo.expect.jakarta.messaging.service.expected.MessageWrapperService;
+import tech.virtua.demo.expect.jakarta.messaging.service.unexpected.Message;
+import tech.virtua.demo.expect.jakarta.messaging.service.unexpected.MessageService;
+import tech.virtua.demo.expect.jakarta.messaging.service.unexpected.MessageWrapperService;
 
-@Path("messages")
-public class MessageResource {
+@Path("messages/unexpected")
+public class UnexpectedMessageResource {
 
     @Inject
     MessageWrapperService repetitiveService;

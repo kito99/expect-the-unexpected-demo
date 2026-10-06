@@ -7,8 +7,9 @@
     </basicRegistry>
     <keyStore id="defaultKeyStore" password="password" />
 
-    <!-- The console defaults to AUDIT and above, which hides application INFO messages. -->
-    <logging consoleLogLevel="INFO" />
+    <!-- The console defaults to AUDIT and above, which hides application INFO messages, and its
+         default DEV format prints a throwable as just its message, so stack traces need SIMPLE. -->
+    <logging consoleLogLevel="INFO" consoleFormat="SIMPLE" />
 
     <httpEndpoint id="defaultHttpEndpoint" host="*" httpPort="9080" httpsPort="9443" />
     <webApplication location="jakartaee-agent-demo.war" contextRoot="/"/>

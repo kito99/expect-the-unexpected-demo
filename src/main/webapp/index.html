@@ -159,6 +159,36 @@
                 color: var(--color-secondary);
                 font-style: italic;
             }
+
+            /* Overrides the flex layout that every other form on the page wants. */
+            .version-choice {
+                display: grid;
+                gap: 0.5rem;
+            }
+
+            .version-choice label {
+                display: flex;
+                gap: 0.5rem;
+                align-items: baseline;
+                font-weight: 400;
+                cursor: pointer;
+            }
+
+            .version-choice input[type="radio"] {
+                margin: 0;
+                accent-color: var(--color-virtua-blue);
+            }
+
+            .version-choice strong {
+                font-weight: 600;
+                color: var(--color-navy);
+            }
+
+            .endpoint {
+                margin: 1rem 0 0;
+                color: var(--color-secondary);
+                font-size: 0.9375rem;
+            }
         </style>
     </head>
     <body>
@@ -168,6 +198,23 @@
         </header>
 
         <main>
+            <section>
+                <h2>Which version?</h2>
+                <form id="version-form" class="version-choice">
+                    <label>
+                        <input type="radio" name="version" value="unexpected" checked>
+                        <span><strong>Unexpected</strong> &mdash; checks by hand, throws standard exceptions,
+                            logs with <code>println</code></span>
+                    </label>
+                    <label>
+                        <input type="radio" name="version" value="expected">
+                        <span><strong>Expected</strong> &mdash; Jakarta Validation, mapped exceptions, JSON
+                            error payloads</span>
+                    </label>
+                </form>
+                <p class="endpoint">Both cards below call <code id="active-endpoint">rest/messages/unexpected</code>.</p>
+            </section>
+
             <section>
                 <h2>Send a message</h2>
                 <form id="send-form">
@@ -180,7 +227,7 @@
 
             <section>
                 <h2>Get a message</h2>
-                <a id="get-link" class="button" href="rest/messages">Get message</a>
+                <a id="get-link" class="button" href="rest/messages/unexpected">Get message</a>
                 <div id="get-result" class="result" aria-live="polite"></div>
             </section>
         </main>
@@ -219,22 +266,43 @@
                 }
             }
 
+            const sendResult = document.getElementById("send-result");
+            const getResult = document.getElementById("get-result");
+            const getLink = document.getElementById("get-link");
+
+            function endpoint() {
+                const version = document.querySelector('input[name="version"]:checked').value;
+                return `rest/messages/${version}`;
+            }
+
+            // Keeps the link's href real so it still opens in a new tab, and drops any
+            // result from the version that was selected before.
+            function versionChanged() {
+                const path = endpoint();
+                getLink.setAttribute("href", path);
+                document.getElementById("active-endpoint").textContent = path;
+                sendResult.replaceChildren();
+                getResult.replaceChildren();
+            }
+
+            document.getElementById("version-form").addEventListener("change", versionChanged);
+            versionChanged();
+
             // A plain form submit can't send a raw text/plain body, so post it with fetch instead.
             document.getElementById("send-form").addEventListener("submit", (event) => {
                 event.preventDefault();
-                showResponse(() => fetch("rest/messages", {
+                showResponse(() => fetch(endpoint(), {
                     method: "POST",
                     headers: { "Content-Type": "text/plain" },
                     body: document.getElementById("message").value
-                }), document.getElementById("send-result"));
+                }), sendResult);
             });
 
-            const getLink = document.getElementById("get-link");
             getLink.addEventListener("click", (event) => {
                 event.preventDefault();
-                showResponse(() => fetch(getLink.href, {
+                showResponse(() => fetch(endpoint(), {
                     headers: { "Accept": "application/json" }
-                }), document.getElementById("get-result"));
+                }), getResult);
             });
         </script>
     </body>

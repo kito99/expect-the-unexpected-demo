@@ -8,7 +8,6 @@ public class MessageWrapperServiceImpl implements MessageWrapperService {
 
     private final MessageService service;
 
-    // CDI needs a non-private no-arg constructor to create the client proxy.
     protected MessageWrapperServiceImpl() {
         this.service = null;
     }
@@ -18,13 +17,11 @@ public class MessageWrapperServiceImpl implements MessageWrapperService {
         this.service = service;
     }
 
-    // tag::redundant-logging[]
     @Override
     public void sendMessage(String message) {
         try {
             sendRepeatedly(message, 0, 10);
         } catch (Exception e) {
-            e.printStackTrace();
             throw new MessageFailureException(e);
         }
     }
@@ -37,7 +34,6 @@ public class MessageWrapperServiceImpl implements MessageWrapperService {
                 sendRepeatedly(message, iteration + 1, maxLevel);
             }
         } catch (Exception e) {
-            e.printStackTrace();
             throw e;
         }
     }

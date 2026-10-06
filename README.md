@@ -6,9 +6,54 @@ Injection (CDI) services behind a Jakarta REST endpoint, so you can watch each e
 browser or with curl.
 
 A lot of the failures here are intentional. The goal is to show how different exception handling choices
-look from the outside, so most requests end in an error on purpose. The failures this app raises itself go
-through an exception mapper, so the caller gets the same JSON shape and a status that actually describes what
-went wrong.
+look from the outside, so most requests end in an error on purpose.
+
+The same service exists twice, once written the naive way and once written the way the talk argues for, so
+you can hit both and compare what a caller sees.
+
+## Two versions of the same service
+
+Under `messaging/service` there are two packages holding the same five types with the same names.
+
+`unexpected` is where the demo starts. It validates by hand and throws whatever standard exception is
+closest, so an `IllegalArgumentException` means bad input and an `IllegalStateException` means the service
+window is closed. It logs with `System.out.println` and `System.err.println`. No exception mapper matches
+any of it, so every failure falls through to the one Liberty ships and comes back as a 500.
+
+`expected` is where the demo ends. Validation is declarative through Jakarta Validation, failures carry an
+`ErrorCode`, and the mappers in `tech.virtua.demo.expect.jakarta.error` turn each one into a JSON payload
+with a status that fits.
+
+Each version has its own resource class, `UnexpectedMessageResource` and `ExpectedMessageResource`, serving
+matching paths under `/rest/messages`.
+
+The difference is easiest to see on the one request that is plainly the caller's fault:
+
+| `POST` with `H!`            | Status | Body                                                                     |
+|-----------------------------|--------|--------------------------------------------------------------------------|
+| `/rest/messages/unexpected` | 500    | `java.lang.IllegalArgumentException: text must be at least 5 characters` |
+| `/rest/messages/expected`   | 400    | the JSON payload below, naming `text` and the rule it broke              |
+
+The naive version reports a client mistake as a server error and hands the caller an internal class name
+while doing it.
+
+The server log tells the same story. `System.out.println` arrives with no logger name, no level, and nothing
+tying it to a response:
+
+```
+[10/6/26, 0:11:54:477 EDT] 0000379b SystemOut   O Message sent: Message[text=Hello there]
+[10/6/26, 0:11:54:414 EDT] 00003705 SystemErr   R Could not send message: H!
+```
+
+The mapped version names the logger, carries a real level, and prints the error ID that the caller also
+received:
+
+```
+[10/6/26, 0:11:54:351 EDT] 000037b3 tech.virtua.demo.expect.jakarta.error.ErrorMapping  W [b124b598-...] VALIDATION_FAILED /rest/messages/expected -> 400: Request validation failed [text: size must be between 5 and 2147483647]
+```
+
+Because `println` output is a raw stream rather than a log record, `consoleLogLevel` and
+`traceSpecification` can't filter or route it either.
 
 ## Running the app
 
@@ -35,32 +80,42 @@ Once the server is ready, open [http://localhost:9080](http://localhost:9080).
 
 ## Using the app
 
-The home page has two cards:
+The home page starts with a **Which version?** picker. It defaults to **Unexpected**, the starting point for
+the talk, and switching it repoints both cards below and clears whatever the other version just returned.
+The path currently in play is shown right under the radio buttons.
+
+Below that are two cards:
 
 - **Send a message** posts whatever you type to the server. The field starts with `H!`, which is too short
-  and fails. Try five or more characters of actual text to see a successful send. Blanks don't count,
-  because the message is annotated `@NotBlank` as well as `@Size(min = 5)`.
+  and fails. Try five or more characters of actual text to see a successful send. Blanks don't count either,
+  since both versions reject them.
 - **Get a message** asks the server for the current message. The service is always outside its service
   window, so this always fails.
 
-Both cards show the HTTP status and response body right on the page. To see the full story, keep an eye on
-the server log too, because that's where the stack traces show up.
+Both cards show the HTTP status and response body right on the page. Flip the picker between sends to watch
+the same input come back as a 500 and then as a 400. To see the full story, keep an eye on the server log
+too, because that's where the stack traces show up.
 
 ## REST API
 
 The REST application is mounted at `/rest`.
 
-| Method | Path             | Request           | Result                                                                                  |
-|--------|------------------|-------------------|-----------------------------------------------------------------------------------------|
-| `POST` | `/rest/messages` | `text/plain` body | 204 No Content when the message is non-blank and at least five characters, otherwise a 400 Bad Request |
-| `GET`  | `/rest/messages` | none              | Returns the message as JSON, but right now always responds with a 503 Service Unavailable |
+| Method | Path                        | Request           | Result                                                                                    |
+|--------|-----------------------------|-------------------|-------------------------------------------------------------------------------------------|
+| `POST` | `/rest/messages/expected`   | `text/plain` body | 204 No Content when the message is non-blank and at least five characters, otherwise a 400 Bad Request |
+| `GET`  | `/rest/messages/expected`   | none              | Returns the message as JSON, but right now always responds with a 503 Service Unavailable |
+| `POST` | `/rest/messages/unexpected` | `text/plain` body | 204 No Content on the same input, but a 500 Internal Server Error for anything rejected    |
+| `GET`  | `/rest/messages/unexpected` | none              | Always a 500 Internal Server Error                                                        |
 
 You can also try the endpoints with curl:
 
 ```
-curl -i -X POST -H "Content-Type: text/plain" -d 'H!' http://localhost:9080/rest/messages
-curl -i -X POST -H "Content-Type: text/plain" -d 'Hello there' http://localhost:9080/rest/messages
-curl -i http://localhost:9080/rest/messages
+curl -i -X POST -H "Content-Type: text/plain" -d 'H!' http://localhost:9080/rest/messages/expected
+curl -i -X POST -H "Content-Type: text/plain" -d 'Hello there' http://localhost:9080/rest/messages/expected
+curl -i http://localhost:9080/rest/messages/expected
+
+curl -i -X POST -H "Content-Type: text/plain" -d 'H!' http://localhost:9080/rest/messages/unexpected
+curl -i http://localhost:9080/rest/messages/unexpected
 ```
 
 ## Error responses
@@ -72,7 +127,7 @@ Failures raised by this application come back in the same shape, so a client onl
   "code": "VALIDATION_FAILED",
   "status": 400,
   "message": "Request validation failed",
-  "path": "/rest/messages",
+  "path": "/rest/messages/expected",
   "errorId": "f10acf5b-61fe-4db2-a4de-578780b0d4f6",
   "timestamp": "2026-10-06T02:21:58.947036Z",
   "violations": [
@@ -168,11 +223,22 @@ RESTEASY003210: Could not find resource for full path: http://localhost:9080/res
 Branching back out of that takes a `WebApplicationException` passthrough and an `instanceof` check, which
 only moves the runtime's own type dispatch into code you have to maintain.
 
-`ErrorMapping` builds the payload and writes one log entry per failure. Server errors get logged at
-`SEVERE` with the full stack trace. Client errors get logged at `WARNING` without one, since a rejected
-request is the caller's mistake and its stack trace is just noise. That one entry is the deliberate contrast
-to the `printStackTrace()` pile-up in `MessageWrapperServiceImpl`. Liberty's validator logs a warning of its
-own alongside it, so the mapper is the only thing writing once, not the server as a whole.
+`ErrorMapping` builds the payload and writes one log entry per failure. The level follows the status, so a
+server error lands at `SEVERE` and a client error at `WARNING`.
+
+The stack trace is a separate decision: everything gets one except a validation failure, where the trace
+only runs back through the validation interceptor and points at nothing you can act on. Keeping those two
+choices apart means a future client error that isn't a validation failure still arrives with its trace.
+
+What a validation entry gets instead is the rejected input, appended in brackets, so the log says which
+field broke which rule without anyone having to dig up the response body:
+
+```
+... VALIDATION_FAILED /rest/messages/expected -> 400: Request validation failed [text: must not be blank; text: size must be between 5 and 2147483647]
+``` That one entry is the deliberate contrast
+to the `printStackTrace()` pile-up in the `unexpected` wrapper, which fires once per nested frame on the way
+up. Liberty's validator logs a warning of its own alongside the mapper's entry, so it's the mapper that
+writes once, not the server as a whole.
 
 One thing worth knowing if you adapt this code: `MessageWrapperServiceImpl` catches the validation failure
 and wraps it in a `MessageFailureException`, so a 500 is what you'd expect to come back. You still get a 400
@@ -187,26 +253,53 @@ Open Liberty builds its logging on `java.util.logging`, so a plain `Logger.getLo
 code is all you need and there's no dependency to add. Liberty routes those records into `messages.log`
 under `target/liberty/wlp/usr/servers/defaultServer/logs`.
 
-The catch is that the console shows only `AUDIT` and above by default, so application `INFO` messages land
-in `messages.log` and never reach the terminal. That's why `src/main/liberty/config/server.xml` sets the
-level explicitly:
+Two separate defaults get in the way, and both have to be changed before the terminal shows what you
+expect. `src/main/liberty/config/server.xml` sets them:
 
 ```xml
-<logging consoleLogLevel="INFO" />
+<logging consoleLogLevel="INFO" consoleFormat="SIMPLE" />
 ```
 
-Liberty maps `SEVERE` to `E`, `WARNING` to `W`, and `INFO` to `I`. Everything below `INFO` is treated as
-trace, `CONFIG` included, so it won't show up in `messages.log` at all. To see those levels, add a trace
-specification and read `trace.log`:
+`consoleLogLevel` defaults to `AUDIT`, which sits above `INFO`, so application `INFO` messages land in
+`messages.log` and never reach the terminal. Warnings and errors do come through at the default, so this
+one only hides the quieter messages.
+
+`consoleFormat` is the sneakier of the two. It defaults to `DEV`, which is built for brevity and renders a
+logged throwable as nothing but its message. The stack trace is sitting complete in `messages.log` the whole
+time, yet the console shows one line and no frames. Same 503, same logging call, only the format differing:
+
+```
+# consoleFormat="DEV"
+[ERROR   ] [a20f5b72-...] OUTSIDE_SERVICE_WINDOW /rest/messages/expected -> 503: Service is not available now (outside service window)
+Service is not available now (outside service window)
+
+# consoleFormat="SIMPLE"
+[10/6/26, 1:07:19:910 EDT] 0000007d ...jakarta.error.ErrorMapping   E [b3ae3bc6-...] OUTSIDE_SERVICE_WINDOW /rest/messages/expected -> 503: Service is not available now (outside service window)
+tech.virtua.demo.expect.jakarta.messaging.service.expected.OutsideServiceWindowException: Service is not available now (outside service window)
+	at ...MessageServiceImpl.getMessage(MessageServiceImpl.java:32)
+	at ...ExpectedMessageResource.getMessage(ExpectedMessageResource.java:26)
+	...
+```
+
+`SIMPLE` costs you a timestamp, a thread ID, and a logger name on every line, which is the price of seeing
+the frames. Both attributes apply without restarting the server.
+
+In `messages.log` and under `SIMPLE`, Liberty maps `SEVERE` to `E`, `WARNING` to `W`, and `INFO` to `I`.
+Everything below `INFO` is treated as trace, `CONFIG` included, so it won't show up in `messages.log` at
+all. To see those levels, add a trace specification and read `trace.log`:
 
 ```xml
-<logging consoleLogLevel="INFO" traceSpecification="tech.virtua.demo.expect.*=finest" />
+<logging consoleLogLevel="INFO" consoleFormat="SIMPLE" traceSpecification="tech.virtua.demo.expect.*=finest" />
 ```
 
 ## Project layout
 
-All of the code lives under `src/main/java/tech/virtua/demo/expect/jakarta`.
+All of the code lives under `src/main/java/tech/virtua/demo/expect/jakarta`. The two service packages hold
+classes with identical names, so each one gets its own resource class and neither has to qualify a type or
+alias an import.
 
-Some of the service methods are wrapped in `tag::` and `end::` comments. They're the same AsciiDoc tags used
-in `src/examples/Examples.java`, which the slides include, so the code here stays easy to match up with the
-slides.
+The services here mirror the examples in `src/examples/Examples.java`, which the slides include by AsciiDoc
+tag, so the code stays easy to match up with what's on screen.
+ 
+
+TODO: Shorten all the extremely verbose and extraneous explanations that need to be kept in sync.
