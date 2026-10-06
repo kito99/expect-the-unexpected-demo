@@ -2,6 +2,7 @@ package tech.virtua.demo.expect.jakarta.messaging.service.expected;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import tech.virtua.demo.expect.jakarta.ApplicationException;
 
 @ApplicationScoped
 public class MessageWrapperServiceImpl implements MessageWrapperService {
@@ -21,6 +22,10 @@ public class MessageWrapperServiceImpl implements MessageWrapperService {
     public void sendMessage(String message) {
         try {
             sendRepeatedly(message, 0, 10);
+        } catch (ApplicationException e) {
+            // Already carries an error code and a message of its own. Re-wrapping would
+            // hand the caller this exception's class name in place of that message.
+            throw e;
         } catch (Exception e) {
             throw new MessageFailureException(e);
         }
@@ -37,5 +42,4 @@ public class MessageWrapperServiceImpl implements MessageWrapperService {
             throw e;
         }
     }
-    // end::redundant-logging[]
 }

@@ -2,7 +2,6 @@ package tech.virtua.demo.expect.jakarta.messaging.service.expected;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.validation.executable.ValidateOnExecution;
-import tech.virtua.demo.expect.jakarta.ErrorCode;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
