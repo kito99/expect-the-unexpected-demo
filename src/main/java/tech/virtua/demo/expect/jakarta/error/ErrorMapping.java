@@ -39,6 +39,8 @@ import static java.util.logging.Level.WARNING;
 import static java.util.stream.Collectors.joining;
 import static tech.virtua.demo.expect.jakarta.ErrorCode.VALIDATION_FAILED;
 
+// TODO: Break this out into two separate mappers with an abstract superclass.
+
 /**
  * Turns a failure into the standardized JSON error payload and logs it once
  * against the error ID the caller receives.

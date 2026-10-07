@@ -3,6 +3,8 @@ package tech.virtua.demo.expect.jakarta.messaging.service.unexpected;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+// TODO: Remove interface and keep same functionality
+
 @ApplicationScoped
 public class MessageWrapperServiceImpl implements MessageWrapperService {
 

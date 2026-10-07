@@ -302,4 +302,4 @@ The services here mirror the examples in `src/examples/Examples.java`, which the
 tag, so the code stays easy to match up with what's on screen.
  
 
-TODO: Shorten all the extremely verbose and extraneous explanations that need to be kept in sync.
+TODO(Kito Mann): Shorten all the extremely verbose and extraneous explanations that need to be kept in sync.
