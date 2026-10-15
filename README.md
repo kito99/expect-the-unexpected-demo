@@ -310,8 +310,9 @@ All of the code lives under `src/main/java/tech/virtua/demo/expect/jakarta`. The
 classes with identical names, so each one gets its own resource class and neither has to qualify a type or
 alias an import.
 
-The services here mirror the examples in `src/examples/Examples.java`, which the slides include by AsciiDoc
-tag, so the code stays easy to match up with what's on screen.
- 
+The services here mirror the plain-Java examples shown in the talk, so the code stays easy to match up with
+what's on screen.
 
-TODO(Kito Mann): Shorten all the extremely verbose and extraneous explanations that need to be kept in sync.
+## License
+
+MIT. See [LICENSE](LICENSE).
