@@ -24,21 +24,27 @@ public class MessageServiceWrapper {
     /// @param message the text to send
     public void sendMessage(String message) {
         try {
-            sendRepeatedly(message, 0, 10);
+            nestedSend(message, 0, 10);
         } catch (Exception e) {
-            System.err.println("Could not send message: " + message);
+            throw e;
         }
     }
 
-    private void sendRepeatedly(String message, int iteration, int maxLevel) {
+    /// Simulates sending the message after going down through {@maxLevel} layers of code.
+    /// 
+    /// @param message the text to send
+    /// @param iteration the current iteration level
+    /// @param maxLevel the maximum number of iterations
+    private void nestedSend(String message, int iteration, int maxLevel) {
         try {
             if (iteration == maxLevel) {
                 service.sendMessage(new Message(message));
             } else {
-                sendRepeatedly(message, iteration + 1, maxLevel);
+                nestedSend(message, iteration + 1, maxLevel);
             }
         } catch (Exception e) {
             e.printStackTrace();
+            throw e;
         }
     }
 }

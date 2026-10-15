@@ -27,20 +27,26 @@ public class MessageServiceWrapper {
     /// @throws ApplicationException if the message cannot be handed to the service
     public void sendMessage(String message) throws ApplicationException {
         try {
-            sendRepeatedly(message, 0, 10);
+            nestedSend(message, 0, 10);
         } catch (ApplicationException e) {
             throw e;
-        } catch (Exception e) {
+        }
+         catch (Exception e) {
             throw new MessageFailureException(e);
         }
     }
 
-    private void sendRepeatedly(String message, int iteration, int maxLevel) throws ApplicationException {
+    /// Simulates sending the message after going down through {@maxLevel} layers of code.
+    ///
+    /// @param message the text to send
+    /// @param iteration the current iteration level
+    /// @param maxLevel the maximum number of iterations
+    private void nestedSend(String message, int iteration, int maxLevel) throws ApplicationException {
         try {
             if (iteration == maxLevel) {
                 service.sendMessage(new Message(message));
             } else {
-                sendRepeatedly(message, iteration + 1, maxLevel);
+                nestedSend(message, iteration + 1, maxLevel);
             }
         } catch (Exception e) {
             throw e;
