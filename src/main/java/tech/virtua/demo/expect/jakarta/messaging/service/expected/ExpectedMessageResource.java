@@ -1,4 +1,4 @@
-package tech.virtua.demo.expect.jakarta.messaging;
+package tech.virtua.demo.expect.jakarta.messaging.service.expected;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -7,15 +7,12 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import tech.virtua.demo.expect.jakarta.messaging.service.unexpected.Message;
-import tech.virtua.demo.expect.jakarta.messaging.service.unexpected.MessageService;
-import tech.virtua.demo.expect.jakarta.messaging.service.unexpected.MessageWrapperService;
 
-@Path("messages/unexpected")
-public class UnexpectedMessageResource {
+@Path("messages/expected")
+public class ExpectedMessageResource {
 
     @Inject
-    MessageWrapperService repetitiveService;
+    MessageServiceWrapper repetitiveService;
 
     @Inject
     MessageService messageService;

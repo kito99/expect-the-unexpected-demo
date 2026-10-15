@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>tech.virtua.demo.expect</groupId>
-    <artifactId>jakartaee-agent-demo</artifactId>
+    <artifactId>jakartaee-demo</artifactId>
     <version>0.1-SNAPSHOT</version>
     <packaging>war</packaging>
 

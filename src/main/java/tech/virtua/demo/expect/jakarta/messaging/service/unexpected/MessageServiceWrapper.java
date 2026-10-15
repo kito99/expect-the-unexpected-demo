@@ -3,23 +3,25 @@ package tech.virtua.demo.expect.jakarta.messaging.service.unexpected;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-// TODO: Remove interface and keep same functionality
-
+/// Sends and retrieves messages through a messaging service that is only
+/// available during its service window.
 @ApplicationScoped
-public class MessageWrapperServiceImpl implements MessageWrapperService {
+public class MessageServiceWrapper {
 
     private final MessageService service;
 
-    protected MessageWrapperServiceImpl() {
+    protected MessageServiceWrapper() {
         this.service = null;
     }
 
     @Inject
-    public MessageWrapperServiceImpl(MessageService service) {
+    public MessageServiceWrapper(MessageService service) {
         this.service = service;
     }
 
-    @Override
+    /// Sends the given message text. The text must be at least five characters long.
+    ///
+    /// @param message the text to send
     public void sendMessage(String message) {
         try {
             sendRepeatedly(message, 0, 10);

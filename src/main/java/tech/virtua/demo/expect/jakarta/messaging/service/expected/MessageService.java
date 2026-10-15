@@ -1,24 +1,49 @@
 package tech.virtua.demo.expect.jakarta.messaging.service.expected;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.validation.Valid;
+import jakarta.validation.executable.ValidateOnExecution;
 
-/**
- * Sends and retrieves messages through a messaging service that is only
- * available during its service window.
- */
-public interface MessageService {
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.logging.Logger;
 
-    /**
-     * Sends the given message text. The text must be at least five characters long.
-     *
-     * @param message the text to send
-     */
-    void sendMessage(@Valid Message message);
+/// Sends and retrieves messages through a messaging service that is only
+/// available during its service window.
+@ApplicationScoped
+@ValidateOnExecution
+public class MessageService {
 
-    /**
-     * Retrieves the oldest message from the messaging service.
-     *
-     * @return the current message
-     */
-    Message getMessage();
+    private static final Logger LOGGER = Logger.getLogger(MessageService.class.getName());
+    private final Queue<Message> messages = new ConcurrentLinkedQueue<>();
+
+    /// Sends the given message text. The text must be at least five characters long.
+    ///
+    /// @param message the text to send
+    public void sendMessage(@Valid Message message) {
+        if (message.text().toLowerCase().contains("failure")) {
+            throw new MessageFailureException("Message could not be sent");
+        }
+        messages.add(message);
+        LOGGER.info("Message sent: " + message);
+    }
+
+    /// Retrieves the oldest message from the messaging service.
+    ///
+    /// @return the current message
+    public Message getMessage() {
+        if (withinServiceWindow()) {
+            return retrieveMessage();
+        } else {
+            throw new OutsideServiceWindowException("Service is not available now (outside service window)");
+        }
+    }
+
+    private boolean withinServiceWindow() {
+        return false;
+    }
+
+    private Message retrieveMessage() {
+        return messages.remove();
+    }
 }

@@ -17,8 +17,9 @@ Under `messaging/service` there are two packages holding the same five types wit
 
 `unexpected` is where the demo starts. It validates by hand and throws whatever standard exception is
 closest, so an `IllegalArgumentException` means bad input and an `IllegalStateException` means the service
-window is closed. It logs with `System.out.println` and `System.err.println`. No exception mapper matches
-any of it, so every failure falls through to the one Liberty ships and comes back as a 500.
+window is closed. It logs with `System.out.println` and `System.err.println`. Nothing maps any of it, so a
+failure that escapes falls through to the mapper Liberty ships and comes back as a bare 500. A failure the
+wrapper catches never escapes at all, because it prints a stack trace and returns as if nothing happened.
 
 `expected` is where the demo ends. Validation is declarative through Jakarta Validation, failures carry an
 `ErrorCode`, and the mappers in `tech.virtua.demo.expect.jakarta.error` turn each one into a JSON payload
@@ -29,27 +30,29 @@ matching paths under `/rest/messages`.
 
 The difference is easiest to see on the one request that is plainly the caller's fault:
 
-| `POST` with `H!`            | Status | Body                                                                     |
-|-----------------------------|--------|--------------------------------------------------------------------------|
-| `/rest/messages/unexpected` | 500    | `java.lang.IllegalArgumentException: text must be at least 5 characters` |
-| `/rest/messages/expected`   | 400    | the JSON payload below, naming `text` and the rule it broke              |
+| `POST` with `H!`            | Status | Body                                                        |
+|-----------------------------|--------|-------------------------------------------------------------|
+| `/rest/messages/unexpected` | 204    | empty                                                       |
+| `/rest/messages/expected`   | 400    | the JSON payload below, naming `text` and the rule it broke |
 
-The naive version reports a client mistake as a server error and hands the caller an internal class name
-while doing it.
+That 204 is the worst answer on offer. The naive wrapper swallows the failure, so the caller is told the
+message was accepted when it was thrown away, and the only trace of it is a stack dump on the server that
+nothing points back to. Silence is the failure mode worth dwelling on: a 500 at least tells the caller
+something broke.
 
 The server log tells the same story. `System.out.println` arrives with no logger name, no level, and nothing
 tying it to a response:
 
 ```
-[10/6/26, 0:11:54:477 EDT] 0000379b SystemOut   O Message sent: Message[text=Hello there]
-[10/6/26, 0:11:54:414 EDT] 00003705 SystemErr   R Could not send message: H!
+[10/6/26, 23:28:31:458 EDT] 0000005e SystemOut   O Message sent: Message[text=Hello there]
+[10/6/26, 23:28:31:458 EDT] 0000005e SystemErr   R java.lang.IllegalArgumentException: text must be at least 5 characters
 ```
 
 The mapped version names the logger, carries a real level, and prints the error ID that the caller also
 received:
 
 ```
-[10/6/26, 0:11:54:351 EDT] 000037b3 tech.virtua.demo.expect.jakarta.error.ErrorMapping  W [b124b598-...] VALIDATION_FAILED /rest/messages/expected -> 400: Request validation failed [text: size must be between 5 and 2147483647]
+[10/6/26, 0:11:54:351 EDT] 000037b3 ...jakarta.error.AbstractErrorMapper  W [b124b598-...] VALIDATION_FAILED /rest/messages/expected -> 400: Request validation failed [text: size must be between 5 and 2147483647]
 ```
 
 Because `println` output is a raw stream rather than a log record, `consoleLogLevel` and
@@ -104,7 +107,7 @@ The REST application is mounted at `/rest`.
 |--------|-----------------------------|-------------------|-------------------------------------------------------------------------------------------|
 | `POST` | `/rest/messages/expected`   | `text/plain` body | 204 No Content when the message is non-blank and at least five characters, otherwise a 400 Bad Request |
 | `GET`  | `/rest/messages/expected`   | none              | Returns the message as JSON, but right now always responds with a 503 Service Unavailable |
-| `POST` | `/rest/messages/unexpected` | `text/plain` body | 204 No Content on the same input, but a 500 Internal Server Error for anything rejected    |
+| `POST` | `/rest/messages/unexpected` | `text/plain` body | 204 No Content either way, since a rejected message is swallowed rather than reported     |
 | `GET`  | `/rest/messages/unexpected` | none              | Always a 500 Internal Server Error                                                        |
 
 You can also try the endpoints with curl:
@@ -145,7 +148,7 @@ matching server log entry, which makes it easy to tie a complaint from a caller 
 Errors the runtime produces before your code is reached, like a 404 for an unknown path or a 415 for the
 wrong content type, don't pass through these mappers and keep whatever Liberty sends.
 
-`ErrorMapping` in `tech.virtua.demo.expect.jakarta.error` holds both providers as nested classes:
+Two providers in `tech.virtua.demo.expect.jakarta.error` do the work:
 
 - `ApplicationExceptionMapper` handles anything that extends `ApplicationException`. Each of those
   exceptions carries its own `ErrorCode`, so `OutsideServiceWindowException` becomes a 503 and
@@ -153,10 +156,9 @@ wrong content type, don't pass through these mappers and keep whatever Liberty s
 - `ValidationExceptionMapper` handles `ConstraintViolationException` and turns every constraint violation
   into a 400 with the offending field named.
 
-They sit in one class because Jakarta REST matches a provider on its exception type, and a single class
-can't implement `ExceptionMapper` twice with different type arguments. Nesting them keeps both mappers in
-one file and lets them share the enclosing class's payload and logging code without a base class in the
-middle.
+They're separate classes because Jakarta REST matches a provider on its exception type, and a single class
+can't implement `ExceptionMapper` twice with different type arguments. Both extend `AbstractErrorMapper`,
+which holds the payload building and the logging they share.
 
 ### Picking the type a mapper matches
 
@@ -223,7 +225,7 @@ RESTEASY003210: Could not find resource for full path: http://localhost:9080/res
 Branching back out of that takes a `WebApplicationException` passthrough and an `instanceof` check, which
 only moves the runtime's own type dispatch into code you have to maintain.
 
-`ErrorMapping` builds the payload and writes one log entry per failure. The level follows the status, so a
+`AbstractErrorMapper` builds the payload and writes one log entry per failure. The level follows the status, so a
 server error lands at `SEVERE` and a client error at `WARNING`.
 
 The stack trace is a separate decision: everything gets one except a validation failure, where the trace
@@ -236,9 +238,9 @@ field broke which rule without anyone having to dig up the response body:
 ```
 ... VALIDATION_FAILED /rest/messages/expected -> 400: Request validation failed [text: must not be blank; text: size must be between 5 and 2147483647]
 ``` That one entry is the deliberate contrast
-to the `printStackTrace()` pile-up in the `unexpected` wrapper, which fires once per nested frame on the way
-up. Liberty's validator logs a warning of its own alongside the mapper's entry, so it's the mapper that
-writes once, not the server as a whole.
+to the raw `printStackTrace()` in the `unexpected` wrapper, which has no level, no logger, and no error ID
+tying it to anything the caller saw. Liberty's validator logs a warning of its own alongside the mapper's
+entry, so it's the mapper that writes once, not the server as a whole.
 
 One thing worth knowing if you adapt this code: `MessageWrapperServiceImpl` catches the validation failure
 and wraps it in a `MessageFailureException`, so a 500 is what you'd expect to come back. You still get a 400
@@ -274,10 +276,10 @@ time, yet the console shows one line and no frames. Same 503, same logging call,
 Service is not available now (outside service window)
 
 # consoleFormat="SIMPLE"
-[10/6/26, 1:07:19:910 EDT] 0000007d ...jakarta.error.ErrorMapping   E [b3ae3bc6-...] OUTSIDE_SERVICE_WINDOW /rest/messages/expected -> 503: Service is not available now (outside service window)
+[10/6/26, 1:07:19:910 EDT] 0000007d ...jakarta.error.AbstractErrorMapper   E [b3ae3bc6-...] OUTSIDE_SERVICE_WINDOW /rest/messages/expected -> 503: Service is not available now (outside service window)
 tech.virtua.demo.expect.jakarta.messaging.service.expected.OutsideServiceWindowException: Service is not available now (outside service window)
-	at ...MessageServiceImpl.getMessage(MessageServiceImpl.java:32)
-	at ...ExpectedMessageResource.getMessage(ExpectedMessageResource.java:26)
+	at ...MessageService.getMessage(MessageService.java:38)
+	at ...ExpectedMessageResource.getMessage(ExpectedMessageResource.java:23)
 	...
 ```
 
