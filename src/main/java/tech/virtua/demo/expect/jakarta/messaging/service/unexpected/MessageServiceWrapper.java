@@ -26,7 +26,7 @@ public class MessageServiceWrapper {
         try {
             nestedSend(message, 0, 10);
         } catch (Exception e) {
-            throw e;
+            System.err.println("Could not send message: " + message);
         }
     }
 
@@ -44,7 +44,6 @@ public class MessageServiceWrapper {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            throw e;
         }
     }
 }
