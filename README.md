@@ -139,6 +139,16 @@ Failures raised by this application come back in the same shape, so a client onl
 }
 ```
 
+`ApplicationException` is sealed over `MessageFailureException` and `OutsideServiceWindowException`, so the
+set of failures this application raises is closed and a reader can see all of them from the base type. Those
+subclasses live in a different package from the base, which a sealed type only allows inside a named module,
+which is why there's a `module-info.java`. Note that it earns its keep at compile time only: a web archive's
+classes load into the unnamed module, and the runtime sealing check asks for the same *module* rather than
+the same package, so the hierarchy loads either way.
+
+Methods that can raise one say so with a `throws` clause. The exceptions are unchecked, so nothing forces
+this, but it puts the failure in the signature where a caller reading the method will see it.
+
 `code` is an `ErrorCode`, an enum that names the kind of failure without knowing anything about HTTP. The
 REST layer is the only place that turns a code into a status, so the service classes stay free of transport
 details. `errorId` is a fresh identifier on every failure, and it shows up in both the response and the

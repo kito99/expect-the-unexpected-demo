@@ -4,7 +4,7 @@ import tech.virtua.demo.expect.jakarta.ApplicationException;
 
 import static tech.virtua.demo.expect.jakarta.ErrorCode.MESSAGE_SEND_FAILED;
 
-public class MessageFailureException extends ApplicationException {
+public final class MessageFailureException extends ApplicationException {
 
     public MessageFailureException() {
         super(MESSAGE_SEND_FAILED);

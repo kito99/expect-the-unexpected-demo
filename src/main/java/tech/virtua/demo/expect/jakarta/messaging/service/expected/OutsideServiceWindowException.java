@@ -4,7 +4,7 @@ import tech.virtua.demo.expect.jakarta.ApplicationException;
 
 import static tech.virtua.demo.expect.jakarta.ErrorCode.OUTSIDE_SERVICE_WINDOW;
 
-public class OutsideServiceWindowException extends ApplicationException {
+public final class OutsideServiceWindowException extends ApplicationException {
 
     public OutsideServiceWindowException() {
         super(OUTSIDE_SERVICE_WINDOW);

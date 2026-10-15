@@ -24,6 +24,7 @@ public class MessageServiceWrapper {
     /// Sends the given message text. The text must be at least five characters long.
     /// 
     /// @param message the text to send
+    /// @throws ApplicationException if the message cannot be handed to the service
     public void sendMessage(String message) throws ApplicationException {
         try {
             sendRepeatedly(message, 0, 10);

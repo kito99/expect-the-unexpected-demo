@@ -20,7 +20,8 @@ public class MessageService {
     /// Sends the given message text. The text must be at least five characters long.
     ///
     /// @param message the text to send
-    public void sendMessage(@Valid Message message) {
+    /// @throws MessageFailureException if the service cannot accept the message
+    public void sendMessage(@Valid Message message) throws MessageFailureException {
         if (message.text().toLowerCase().contains("failure")) {
             throw new MessageFailureException("Message could not be sent");
         }
@@ -31,7 +32,8 @@ public class MessageService {
     /// Retrieves the oldest message from the messaging service.
     ///
     /// @return the current message
-    public Message getMessage() {
+    /// @throws OutsideServiceWindowException if the service is outside its service window
+    public Message getMessage() throws OutsideServiceWindowException {
         if (withinServiceWindow()) {
             return retrieveMessage();
         } else {
