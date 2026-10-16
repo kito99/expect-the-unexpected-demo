@@ -1,21 +1,27 @@
-# Expect the Unexpected: Jakarta EE Demo
+# Expect the Unexpected Demo
 
-This is a small Jakarta EE 11 web application that goes along with the "Expect the Unexpected" talk about
-exception handling. It takes the examples from the slides and runs them as real Contexts and Dependency
-Injection (CDI) services behind a Jakarta REST endpoint, so you can watch each exception happen from a
-browser or with curl.
+This is the demo app for the Expect the Unexpected talk by 
+Kito D. Mann, Principal Consultant, [virtua.tech](https://virtua.tech).
 
-A lot of the failures here are intentional. The goal is to show how different exception handling choices
-look from the outside, so most requests end in an error on purpose.
+Links:
 
-The same service exists twice, once written the naive way and once written the way the talk argues for, so
-you can hit both and compare what a caller sees.
+* [Session landing page (past and future deliveries, additional artifacts, etc.)](https://kitomann.com/#/sessions/42/expect-the-unexpected-handling-exceptions-in-enterprise-applications).
+* [Slides](https://virtua.tech/slides/expect-the-unexpected/Expect%20the%20Unexpected.pdf)
+
+# Overview
+
+This is a simple application that shows common exception handling antipatterns as well as the 
+correct way to handle exceptions, plus an example exception hierarchy, centralized error handling, and 
+use of [Jakarta Validation (Bean Validation)](https://beanvalidation.org).
+
+It's built using Jakarta EE and OpenLiberty, but the concepts translate to any Java app using Spring Boot or 
+some other framework.
 
 ## Two versions of the same service
 
-Under `messaging/service` there are two packages holding the same five types with the same names.
+Under `messaging/service` there are two packages with the same classes.
 
-`unexpected` is where the demo starts. It validates by hand and throws whatever standard exception is
+`unexpected` is where the demo starts. It validates manually and throws whatever standard exception is
 closest, so an `IllegalArgumentException` means bad input and an `IllegalStateException` means the service
 window is closed. It logs with `System.out.println` and `System.err.println`. Nothing maps any of it, so a
 failure that escapes falls through to the mapper Liberty ships and comes back as a bare 500. A failure the
@@ -39,7 +45,7 @@ That 204 is the worst answer on offer. The naive wrapper swallows the failure, s
 message was accepted when it was thrown away, and the only trace of it is a stack dump on the server that
 nothing points back to. Silence is the failure mode worth dwelling on: a 500 at least tells the caller
 something broke.
-
+  
 The server log tells the same story. `System.out.println` arrives with no logger name, no level, and nothing
 tying it to a response:
 
